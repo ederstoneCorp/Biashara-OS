@@ -1,0 +1,8 @@
+{
+  "name": "BiasharaOS - Business Management SaaS",
+  "description": "Multi-tenant business management SaaS for Kenyan SMEs and growing enterprises: POS, inventory, financials, invoicing, employee commissions, appointments, subscriptions, and Gemini AI assistant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
