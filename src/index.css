@@ -1,1 +1,39 @@
 @import "tailwindcss";
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-receipt, #printable-receipt * {
+    visibility: visible;
+  }
+  #printable-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 10mm;
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  #printable-receipt .text-slate-100,
+  #printable-receipt .text-slate-200,
+  #printable-receipt .text-slate-300,
+  #printable-receipt .text-slate-400,
+  #printable-receipt .text-slate-500 {
+    color: #111 !important;
+  }
+  #printable-receipt .bg-slate-900,
+  #printable-receipt .bg-slate-950\/60,
+  #printable-receipt .bg-emerald-950\/40 {
+    background: transparent !important;
+  }
+  #printable-receipt .border-slate-800,
+  #printable-receipt .border-emerald-800\/40 {
+    border-color: #ccc !important;
+  }
+}
+

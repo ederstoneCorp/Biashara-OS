@@ -22,7 +22,7 @@ export default defineConfig(() => {
         configureServer(server) {
           server.middlewares.use((req, res, next) => {
             if (req.url && req.url.startsWith('/api')) {
-              return app(req, res, next);
+              return app(req as any, res as any, next);
             }
             next();
           });

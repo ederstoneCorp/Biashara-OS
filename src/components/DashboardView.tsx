@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useEffect, useState } from 'react';
 import { formatKES } from '../utils/businessMath.ts';
 import {
@@ -7,16 +12,29 @@ import {
   AlertTriangle,
   Receipt,
   FileText,
-  Users,
   ArrowUpRight,
-  ShieldAlert,
   Sparkles,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 
 interface DashboardViewProps {
   onNavigate: (tab: any) => void;
   onOpenAI: () => void;
 }
+
+const COLORS = ['#10b981', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1'];
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpenAI }) => {
   const [stats, setStats] = useState<any>(null);
@@ -62,7 +80,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
     );
   }
 
-  const { financialSummary, outstandingInvoicesTotal, lowStockCount, lowStockAlerts, recentSales, monthlySales } = stats;
+  const { financialSummary, outstandingInvoicesTotal, lowStockCount, lowStockAlerts, recentSales, monthlySales, topProducts } = stats;
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -70,7 +88,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Executive Dashboard</h1>
-          <p className="text-sm text-slate-400">Live operational financial summary and real-time inventory alerts</p>
+          <p className="text-sm text-slate-400">Live operational financial summary and real-time inventory analytics</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -182,113 +200,80 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
         </div>
       </div>
 
-      {/* Middle Grid: Financial Chart & Breakdown */}
+      {/* Middle Grid: Recharts Revenue Trends & Top Products */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sales Trends Chart (Visual Pure CSS Bar Chart) */}
-        <div className="lg:col-span-2 p-6 rounded-xl bg-slate-900 border border-slate-800">
+        {/* Sales & Expenditure Recharts Bar Chart */}
+        <div className="lg:col-span-2 p-6 rounded-xl bg-slate-900 border border-slate-800 flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-base font-semibold text-white">Sales & Expenditure Trends</h2>
-              <p className="text-xs text-slate-400">Monthly revenue vs operating costs in Kenyan Shillings</p>
-            </div>
-            <div className="flex items-center gap-4 text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded bg-emerald-500" />
-                <span className="text-slate-300">Revenue</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded bg-rose-500/70" />
-                <span className="text-slate-300">Expenses</span>
-              </div>
+              <h2 className="text-base font-semibold text-white">Revenue & Expenditure Trends</h2>
+              <p className="text-xs text-slate-400">Monthly revenue vs operating costs (Recharts visualization)</p>
             </div>
           </div>
 
-          {/* Bar Chart Bars */}
-          <div className="h-48 flex items-end justify-between gap-4 pt-6 border-b border-slate-800 pb-2">
-            {monthlySales.map((item: any, idx: number) => {
-              const maxVal = Math.max(...monthlySales.map((m: any) => m.sales), 10000);
-              const salesHeight = Math.min(100, Math.round((item.sales / maxVal) * 100));
-              const expHeight = Math.min(100, Math.round((item.expenses / maxVal) * 100));
-              return (
-                <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                  <div className="w-full flex items-end justify-center gap-1 h-40">
-                    <div
-                      style={{ height: `${salesHeight}%` }}
-                      className="w-1/2 bg-emerald-500 hover:bg-emerald-400 rounded-t transition-all relative group-hover:shadow-lg group-hover:shadow-emerald-500/30"
-                      title={`Sales: KES ${item.sales.toLocaleString()}`}
-                    />
-                    <div
-                      style={{ height: `${expHeight}%` }}
-                      className="w-1/2 bg-rose-500/70 hover:bg-rose-500 rounded-t transition-all"
-                      title={`Expenses: KES ${item.expenses.toLocaleString()}`}
-                    />
-                  </div>
-                  <span className="text-xs text-slate-400 font-medium">{item.month}</span>
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex justify-between text-xs text-slate-500 pt-3 font-mono">
-            <span>KES 0</span>
-            <span>KES {Math.max(...monthlySales.map((m: any) => m.sales)).toLocaleString()}</span>
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlySales} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
+                <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={(val) => `Ksh ${(val / 1000).toFixed(0)}k`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.5rem', color: '#fff', fontSize: '12px' }}
+                  formatter={(val: any) => [formatKES(val), '']}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Bar dataKey="sales" name="Revenue (KES)" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expenses" name="Expenses (KES)" fill="#f43f5e" opacity={0.8} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Profitability Snapshot */}
+        {/* Top Performing Products Recharts */}
         <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 flex flex-col justify-between">
           <div>
-            <h2 className="text-base font-semibold text-white mb-1">Financial Integrity Summary</h2>
-            <p className="text-xs text-slate-400 mb-6">Database verified figures for current fiscal cycle</p>
+            <h2 className="text-base font-semibold text-white mb-1">Top Performing Products</h2>
+            <p className="text-xs text-slate-400 mb-4">Highest revenue generating inventory items</p>
 
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-400">Gross Margin</span>
-                  <span className="font-semibold text-emerald-400">{financialSummary.grossMarginPct}%</span>
-                </div>
-                <div className="w-full bg-slate-800 rounded-full h-2">
-                  <div
-                    className="bg-emerald-500 h-2 rounded-full"
-                    style={{ width: `${Math.min(100, financialSummary.grossMarginPct)}%` }}
-                  />
-                </div>
+            {topProducts && topProducts.length > 0 ? (
+              <div className="h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={topProducts}
+                      dataKey="revenue"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={70}
+                      innerRadius={35}
+                      paddingAngle={4}
+                      label={({ name, percent }: { name?: string; percent?: number }) => `${name ? name.substring(0, 10) : ''}... (${((percent || 0) * 100).toFixed(0)}%)`}
+                      labelLine={false}
+                    >
+                      {topProducts.map((_: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.5rem', color: '#fff', fontSize: '12px' }}
+                      formatter={(val: any) => [formatKES(val), 'Revenue']}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-400">Net Margin</span>
-                  <span className="font-semibold text-teal-400">{financialSummary.netMarginPct}%</span>
-                </div>
-                <div className="w-full bg-slate-800 rounded-full h-2">
-                  <div
-                    className="bg-teal-500 h-2 rounded-full"
-                    style={{ width: `${Math.min(100, Math.max(0, financialSummary.netMarginPct))}%` }}
-                  />
-                </div>
+            ) : (
+              <div className="h-48 flex items-center justify-center text-slate-500 text-xs">
+                No sales data recorded yet for products.
               </div>
-
-              <div className="pt-4 border-t border-slate-800/80 space-y-2 text-xs">
-                <div className="flex justify-between text-slate-300">
-                  <span>Gross Profit</span>
-                  <span className="font-mono font-medium">{formatKES(financialSummary.grossProfit)}</span>
-                </div>
-                <div className="flex justify-between text-slate-300">
-                  <span>Cost of Goods (COGS)</span>
-                  <span className="font-mono">{formatKES(financialSummary.cogs)}</span>
-                </div>
-                <div className="flex justify-between text-slate-300">
-                  <span>Stock Total Units</span>
-                  <span className="font-mono">{stats.inventoryValuation?.totalUnits || 0} pcs</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
           <button
-            onClick={() => onNavigate('finance')}
-            className="w-full mt-6 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors text-center"
+            onClick={() => onNavigate('inventory')}
+            className="w-full mt-4 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors text-center"
           >
-            Full P&L and Cashflow Statement →
+            Manage Inventory Catalog →
           </button>
         </div>
       </div>

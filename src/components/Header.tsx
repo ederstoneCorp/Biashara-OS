@@ -1,7 +1,12 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React from 'react';
 import { AuthState } from '../types/index.ts';
 import { getRoleLabel } from '../utils/rbac.ts';
-import { Sparkles, Building2, UserCheck, ShieldCheck, Globe, LayoutDashboard } from 'lucide-react';
+import { Sparkles, Building2, UserCheck, ShieldCheck, Globe, LayoutDashboard, UserPlus } from 'lucide-react';
 
 interface HeaderProps {
   authState: AuthState | null;
@@ -9,6 +14,7 @@ interface HeaderProps {
   onOpenAI: () => void;
   viewMode: 'app' | 'marketing';
   onToggleViewMode: (mode: 'app' | 'marketing') => void;
+  onOpenRegister: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -17,6 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAI,
   viewMode,
   onToggleViewMode,
+  onOpenRegister,
 }) => {
   const currentUser = authState?.user;
   const currentBusiness = authState?.business;
@@ -53,6 +60,15 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right Controls */}
       <div className="flex items-center gap-3">
+        {/* Create Account Button */}
+        <button
+          onClick={onOpenRegister}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-emerald-500/40 text-emerald-400 font-semibold text-xs transition-colors shadow-sm"
+        >
+          <UserPlus className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Create Account</span>
+        </button>
+
         {/* Toggle Mode: Marketing Site vs SaaS App */}
         <div className="flex items-center p-1 bg-slate-900 border border-slate-800 rounded-lg text-xs">
           <button

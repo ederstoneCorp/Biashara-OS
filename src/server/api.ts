@@ -38,17 +38,22 @@ async function resolveAuth(req: Request, res: Response, next: NextFunction) {
 
     const userRows = await db.select().from(users).where(eq(users.id, sessionUserId));
     if (!userRows || userRows.length === 0) {
-      // Fallback to owner
       const fallbackRows = await db.select().from(users).limit(1);
-      (req as any).user = fallbackRows[0];
+      if (fallbackRows.length > 0) {
+        (req as any).user = fallbackRows[0];
+        currentSessionUserId = fallbackRows[0].id;
+      } else {
+        (req as any).user = null;
+      }
     } else {
       (req as any).user = userRows[0];
     }
 
-    const businessId = (req as any).user.businessId;
-    if (businessId) {
-      const bizRows = await db.select().from(businesses).where(eq(businesses.id, businessId));
-      (req as any).business = bizRows[0];
+    if ((req as any).user && (req as any).user.businessId) {
+      const bizRows = await db.select().from(businesses).where(eq(businesses.id, (req as any).user.businessId));
+      (req as any).business = bizRows[0] || null;
+    } else {
+      (req as any).business = null;
     }
 
     next();
@@ -69,6 +74,16 @@ apiRouter.get('/auth/me', async (req: Request, res: Response) => {
     const business = (req as any).business;
     const allUsers = await db.select().from(users).orderBy(users.id);
     const allBusinesses = await db.select().from(businesses).orderBy(businesses.id);
+
+    if (!user) {
+      return res.json({
+        user: null,
+        business: null,
+        permissions: {},
+        availableUsers: [],
+        availableBusinesses: [],
+      });
+    }
 
     const permissions = ROLE_PERMISSIONS[user.role as UserRole] || ROLE_PERMISSIONS.business_owner;
 
@@ -103,6 +118,51 @@ apiRouter.post('/auth/switch-user', async (req: Request, res: Response) => {
     res.json({ success: true, activeUser: targetUser[0] });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+apiRouter.post('/auth/register', async (req: Request, res: Response) => {
+  try {
+    const { businessName, ownerName, email, phone, tier } = req.body;
+    if (!businessName || !ownerName || !email) {
+      return res.status(400).json({ error: 'Business name, owner name and email are required' });
+    }
+
+    const slug = businessName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Math.floor(Math.random() * 1000);
+    const uid = 'usr-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+    const [newBiz] = await db
+      .insert(businesses)
+      .values({
+        name: businessName,
+        slug,
+        tier: tier || 'starter',
+        tierStatus: 'active',
+        address: 'Nairobi, Kenya',
+        phone: phone || '+254700000000',
+        taxPin: 'P051283921A',
+        mpesaTill: '892102',
+      })
+      .returning();
+
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        uid,
+        businessId: newBiz.id,
+        email,
+        displayName: ownerName,
+        role: 'business_owner',
+        phone: phone || '+254700000000',
+        status: 'active',
+      })
+      .returning();
+
+    currentSessionUserId = newUser.id;
+
+    res.json({ success: true, user: newUser, business: newBiz });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to register business account' });
   }
 });
 
@@ -154,6 +214,25 @@ apiRouter.get('/dashboard/stats', async (req: Request, res: Response) => {
     const lowStockAlerts = productsList.filter((p) => p.stockQuantity <= p.minStockAlert);
     const valuation = calculateInventoryValuation(productsList);
 
+    // Compute top products from sales items
+    const productSalesMap: { [name: string]: { name: string; revenue: number; quantity: number } } = {};
+    for (const s of salesList) {
+      try {
+        const items = JSON.parse(s.itemsJson || '[]');
+        for (const it of items) {
+          const name = it.name || 'Unknown Product';
+          if (!productSalesMap[name]) {
+            productSalesMap[name] = { name, revenue: 0, quantity: 0 };
+          }
+          productSalesMap[name].revenue += (it.total || it.unitPrice * it.quantity || 0);
+          productSalesMap[name].quantity += (it.quantity || 1);
+        }
+      } catch {}
+    }
+    const topProducts = Object.values(productSalesMap)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+
     // Monthly breakdown for sales charts
     const monthlySales = [
       { month: 'Jun', sales: Math.round(totalRevenue * 0.12), expenses: Math.round(totalExpenses * 0.14) },
@@ -174,6 +253,7 @@ apiRouter.get('/dashboard/stats', async (req: Request, res: Response) => {
       recentSales: salesList.slice(0, 5),
       recentExpenses: expensesList.slice(0, 5),
       monthlySales,
+      topProducts,
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to calculate dashboard statistics' });

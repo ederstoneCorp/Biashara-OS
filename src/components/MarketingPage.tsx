@@ -17,9 +17,10 @@ import {
 
 interface MarketingPageProps {
   onEnterApp: () => void;
+  onOpenRegister?: () => void;
 }
 
-export const MarketingPage: React.FC<MarketingPageProps> = ({ onEnterApp }) => {
+export const MarketingPage: React.FC<MarketingPageProps> = ({ onEnterApp, onOpenRegister }) => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
       {/* Navigation */}
@@ -34,7 +35,15 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ onEnterApp }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {onOpenRegister && (
+            <button
+              onClick={onOpenRegister}
+              className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-emerald-500/50 text-emerald-400 font-semibold text-xs transition-all shadow-sm"
+            >
+              Create Account
+            </button>
+          )}
           <button
             onClick={onEnterApp}
             className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all shadow-lg shadow-emerald-600/25 flex items-center gap-2"
@@ -61,6 +70,15 @@ export const MarketingPage: React.FC<MarketingPageProps> = ({ onEnterApp }) => {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          {onOpenRegister && (
+            <button
+              onClick={onOpenRegister}
+              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-emerald-500/50 text-emerald-400 font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2"
+            >
+              <span>Create Business Account</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={onEnterApp}
             className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-xl shadow-emerald-600/25 transition-all flex items-center justify-center gap-2"

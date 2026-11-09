@@ -1,3 +1,8 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState, useEffect } from 'react';
 import { AuthState } from './types/index.ts';
 import { Header } from './components/Header.tsx';
@@ -14,12 +19,14 @@ import { SubscriptionView } from './components/SubscriptionView.tsx';
 import { SuperAdminView } from './components/SuperAdminView.tsx';
 import { GeminiAssistantModal } from './components/GeminiAssistantModal.tsx';
 import { MarketingPage } from './components/MarketingPage.tsx';
+import { RegisterModal } from './components/RegisterModal.tsx';
 
 export default function App() {
   const [authState, setAuthState] = useState<AuthState | null>(null);
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
   const [viewMode, setViewMode] = useState<'app' | 'marketing'>('app');
   const [isAIOpen, setIsAIOpen] = useState(false);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadAuth = async () => {
@@ -28,8 +35,9 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setAuthState(data);
-        // If super admin, default to superadmin tab
-        if (data.user?.role === 'super_admin' && currentTab === 'dashboard') {
+        if (!data.user) {
+          setIsRegisterOpen(true);
+        } else if (data.user?.role === 'super_admin' && currentTab === 'dashboard') {
           setCurrentTab('superadmin');
         }
       }
@@ -77,7 +85,22 @@ export default function App() {
 
   // If in Marketing website mode
   if (viewMode === 'marketing') {
-    return <MarketingPage onEnterApp={() => setViewMode('app')} />;
+    return (
+      <>
+        <MarketingPage
+          onEnterApp={() => setViewMode('app')}
+          onOpenRegister={() => setIsRegisterOpen(true)}
+        />
+        <RegisterModal
+          isOpen={isRegisterOpen}
+          onClose={() => setIsRegisterOpen(false)}
+          onRegistered={async () => {
+            await loadAuth();
+            setViewMode('app');
+          }}
+        />
+      </>
+    );
   }
 
   return (
@@ -89,6 +112,7 @@ export default function App() {
         onOpenAI={() => setIsAIOpen(true)}
         viewMode={viewMode}
         onToggleViewMode={setViewMode}
+        onOpenRegister={() => setIsRegisterOpen(true)}
       />
 
       {/* Main Layout Area */}
@@ -155,6 +179,16 @@ export default function App() {
         isOpen={isAIOpen}
         onClose={() => setIsAIOpen(false)}
         businessName={authState?.business?.name}
+      />
+
+      {/* Register Business Modal */}
+      <RegisterModal
+        isOpen={isRegisterOpen}
+        onClose={() => setIsRegisterOpen(false)}
+        onRegistered={async () => {
+          await loadAuth();
+          setViewMode('app');
+        }}
       />
     </div>
   );
